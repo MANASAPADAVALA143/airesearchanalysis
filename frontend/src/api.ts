@@ -6,12 +6,23 @@ export function apiUrl(path: string): string {
 }
 
 async function parseError(res: Response): Promise<string> {
+  const text = await res.text()
+  const trimmed = text.trim()
+  if (!trimmed) return `Request failed (${res.status})`
   try {
-    const j = await res.json()
+    const j = JSON.parse(trimmed) as { detail?: unknown }
     if (j && typeof j.detail === 'string') return j.detail
-    return JSON.stringify(j)
+    if (Array.isArray(j?.detail)) {
+      const parts = j.detail.map((item) =>
+        typeof item === 'object' && item !== null && 'msg' in item
+          ? String((item as { msg: unknown }).msg)
+          : JSON.stringify(item),
+      )
+      return parts.join('; ')
+    }
+    return trimmed
   } catch {
-    return await res.text()
+    return trimmed
   }
 }
 

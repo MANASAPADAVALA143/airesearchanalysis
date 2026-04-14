@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -14,6 +15,9 @@ def resolve_db_path(database_url: str, base_dir: Path) -> Path:
     if raw.startswith("sqlite:///"):
         raw = raw.replace("sqlite:///", "", 1)
     p = Path(raw)
+    # Vercel serverless: only /tmp is writable; relative DB paths would 500 on INSERT.
+    if os.environ.get("VERCEL") and not p.is_absolute():
+        return Path("/tmp/research.db")
     if not p.is_absolute():
         p = (base_dir / p).resolve()
     return p
