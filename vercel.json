@@ -11,5 +11,11 @@
       "framework": "fastapi",
       "includeFiles": ["backend/**"]
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
