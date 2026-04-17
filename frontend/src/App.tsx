@@ -9,7 +9,7 @@ import Starred from './pages/Starred'
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
+      <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="research" element={<Research />} />
         <Route path="starred" element={<Starred />} />
