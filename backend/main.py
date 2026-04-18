@@ -5,6 +5,7 @@ Pain Point Research Platform — FastAPI backend.
 from __future__ import annotations
 
 import json
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,8 @@ from pdf_export import starred_ideas_to_pdf_bytes
 from prompts import BUILD_SYSTEM, RESEARCH_SYSTEM, build_build_user_prompt, build_research_user_prompt
 
 BASE_DIR = Path(__file__).resolve().parent
+
+_db_lock = threading.Lock()
 
 
 class Settings(BaseSettings):
@@ -121,7 +124,16 @@ class ExportPdfRequest(BaseModel):
 
 
 def _db(request: Request) -> Path:
-    return request.app.state.db_path
+    """Resolve SQLite path; lazy-init if lifespan did not set app.state (e.g. some test/proxy setups)."""
+    state = request.app.state
+    if getattr(state, "db_path", None) is not None:
+        return state.db_path
+    with _db_lock:
+        if getattr(state, "db_path", None) is None:
+            db_path = resolve_db_path(settings.database_url, BASE_DIR)
+            init_db(db_path)
+            state.db_path = db_path
+    return state.db_path
 
 
 @app.get("/api/health")
